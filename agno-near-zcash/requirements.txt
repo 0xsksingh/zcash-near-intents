@@ -3,9 +3,9 @@ agno>=0.5.0
 openai>=1.0.0
 python-dotenv>=1.0.0
 requests>=2.31.0
-near-api-py>=0.5.0  # For NEAR blockchain interaction
+near-api-py==0.1.0  # For NEAR blockchain interaction
 base58>=2.1.1       # For key encoding
-borsh>=0.3.1        # For data serialization
+borsh-construct>=0.1.0  # For Borsh serialization with NEAR
 
 # Agent-specific requirements
 duckduckgo-search>=3.0.0  # For market research capabilities

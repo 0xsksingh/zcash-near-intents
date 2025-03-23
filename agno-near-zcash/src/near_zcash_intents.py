@@ -14,6 +14,7 @@ import random
 import requests
 import time
 import logging
+import borsh_construct
 
 # Configure logging
 logging.basicConfig(
@@ -25,10 +26,10 @@ logging.basicConfig(
 MAX_GAS = 300 * 10 ** 12
 SOLVER_BUS_URL = "https://solver-relay-v2.chaindefuser.com/rpc"
 
-# Add Zcash to the asset map
+# Asset map with correct token IDs
 ASSET_MAP = {
     'USDC': { 
-        'token_id': 'a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.factory.bridge.near',
+        'token_id': 'eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near',
         'omft': 'eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near',
         'decimals': 6,
     },
@@ -36,11 +37,11 @@ ASSET_MAP = {
         'token_id': 'wrap.near',
         'decimals': 24,
     },
-    'ZEC': {  # Add Zcash support
-        'token_id': 'zcash.factory.bridge.near',  # Example token ID for Zcash on NEAR
-        'omft': 'zcash-token.omft.near',  # Example OMFT for Zcash
-        'decimals': 8,  # Zcash has 8 decimal places
-        'shielded': True,  # Flag indicating shielded transaction support
+    'ZEC': {
+        'token_id': 'zec.omft.near',
+        'omft': 'zec.omft.near',
+        'decimals': 8,
+        'shielded': True,
     }
 }
 
@@ -75,11 +76,11 @@ class ZcashCommitment(TypedDict):
 def get_asset_id(token: str) -> str:
     """Get the asset identifier in the format expected by the solver bus."""
     if token == 'NEAR':
-        return 'near'  # Native NEAR token
+        return 'nep141:wrap.near'  # NEAR on Intents (wrapped)
     elif token == 'ZEC':
-        return 'nep141:%s' % ASSET_MAP[token]['token_id']  # ZEC on NEAR
+        return 'nep141:zec.omft.near'  # ZEC on NEAR
     elif token == 'USDC':
-        return 'nep141:a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.factory.bridge.near'  # USDC on NEAR
+        return 'nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near'  # USDC on NEAR
     return 'nep141:%s' % ASSET_MAP[token]['token_id']
 
 def to_decimals(amount: float, decimals: int) -> str:
@@ -320,4 +321,18 @@ def select_best_option(options: List[Dict]) -> Dict:
         
     # For ZEC and private swaps, we might prioritize privacy over best rate
     # This is a simple implementation that just picks the best rate
-    return max(options, key=lambda x: float(x["amount_out"])) 
+    return max(options, key=lambda x: float(x["amount_out"]))
+
+def quote_to_borsh(quote):
+    """Convert a quote to Borsh format using borsh_construct."""
+    QuoteSchema = borsh_construct.CStruct(
+        'nonce' / borsh_construct.String,
+        'signer_id' / borsh_construct.String,
+        'verifying_contract' / borsh_construct.String,
+        'deadline' / borsh_construct.String,
+        'intents' / borsh_construct.Vec(borsh_construct.CStruct(
+            'intent' / borsh_construct.String,
+            'diff' / borsh_construct.HashMap(borsh_construct.String, borsh_construct.String)
+        ))
+    )
+    return QuoteSchema.build(quote) 

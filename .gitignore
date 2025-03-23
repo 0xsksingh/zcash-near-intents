@@ -20,6 +20,8 @@
 # Ignore .env files
 .env
 
+agno-near-zcash/account_file.json
+
 # Ignore .envrc files (used by direnv: https://direnv.net/)
 .envrc
 
